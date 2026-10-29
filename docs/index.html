@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singapore haze today</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌫️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #13293d;
+    --muted: #4a6075;
+    --panel: rgba(255, 255, 255, 0.72);
+    --line: rgba(19, 41, 61, 0.14);
+    --sky-top: #8ec5ea;
+    --sky-bottom: #e8f3fa;
+    --good: #2e9e5b;
+    --moderate: #2f7fc1;
+    --unhealthy: #d9a400;
+    --very: #e06a1b;
+    --hazardous: #c62828;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e6eef5;
+      --muted: #a5b6c6;
+      --panel: rgba(16, 28, 40, 0.72);
+      --line: rgba(230, 238, 245, 0.16);
+      --sky-top: #0f2a40;
+      --sky-bottom: #1b2b38;
+      color-scheme: dark;
+    }
+  }
+  /* The sky turns hazier as PSI rises */
+  body[data-band="unhealthy"] { --sky-top: #c9b98a; --sky-bottom: #ece4cf; }
+  body[data-band="very"]      { --sky-top: #b98d6a; --sky-bottom: #e3d3c4; }
+  body[data-band="hazardous"] { --sky-top: #8f6b5e; --sky-bottom: #cdbab2; }
+  @media (prefers-color-scheme: dark) {
+    body[data-band="unhealthy"] { --sky-top: #3d3524; --sky-bottom: #2a2620; }
+    body[data-band="very"]      { --sky-top: #46301f; --sky-bottom: #2d231c; }
+    body[data-band="hazardous"] { --sky-top: #4a2620; --sky-bottom: #2e1f1c; }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 55%) fixed;
+    transition: background 1.2s ease;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 48px 20px 40px; }
+  h1 { font-size: 1.05rem; font-weight: 700; margin: 0 0 28px; color: var(--muted); }
+  .headline { font-size: clamp(2.2rem, 7vw, 3.6rem); font-weight: 700; line-height: 1.08; margin: 0; max-width: 16ch; }
+  .sub { margin: 14px 0 0; color: var(--muted); max-width: 60ch; }
+  .advice { margin: 18px 0 0; padding: 12px 16px; border-left: 5px solid var(--band, var(--good)); background: var(--panel); border-radius: 0 10px 10px 0; max-width: 60ch; }
+
+  h2 { font-size: 1.15rem; margin: 48px 0 14px; }
+  .map {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-areas: ". north ." "west central east" ". south .";
+    gap: 10px;
+  }
+  .region { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; border-top: 6px solid var(--band, var(--line)); backdrop-filter: blur(6px); }
+  .region h3 { margin: 0; font-size: 0.95rem; font-weight: 400; color: var(--muted); text-transform: capitalize; }
+  .region .value { font-size: 2.1rem; font-weight: 700; line-height: 1.1; }
+  .region .band { font-size: 0.95rem; }
+  .region .pm { font-size: 0.85rem; color: var(--muted); }
+
+  .chart-box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; overflow-x: auto; }
+  svg text { fill: var(--muted); font-family: inherit; font-size: 12px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: 0.9rem; color: var(--muted); padding: 0; list-style: none; }
+  .legend li::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); margin-right: 6px; }
+  footer { margin-top: 40px; font-size: 0.85rem; color: var(--muted); }
+  footer a { color: inherit; }
+  .error { background: var(--panel); border-left: 5px solid var(--hazardous); padding: 12px 16px; border-radius: 0 10px 10px 0; }
+
+  @media (max-width: 520px) {
+    .map { grid-template-columns: 1fr 1fr; grid-template-areas: "north north" "west east" "central central" "south south"; }
+  }
+  @media (prefers-reduced-motion: reduce) { body { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Singapore haze today</h1>
+  <div id="hero"><p class="headline">Loading the latest readings…</p></div>
+
+  <h2>24-hour PSI by region</h2>
+  <div class="map" id="map"></div>
+
+  <h2>Highest PSI over the past week</h2>
+  <div class="chart-box"><div id="chart"></div></div>
+
+  <ul class="legend">
+    <li style="--c: var(--good)">Good, 0–50</li>
+    <li style="--c: var(--moderate)">Moderate, 51–100</li>
+    <li style="--c: var(--unhealthy)">Unhealthy, 101–200</li>
+    <li style="--c: var(--very)">Very unhealthy, 201–300</li>
+    <li style="--c: var(--hazardous)">Hazardous, above 300</li>
+  </ul>
+
+  <footer>
+    Data from the National Environment Agency through <a href="https://data.gov.sg">data.gov.sg</a>, refreshed every hour.
+    For official health advice, check NEA’s haze website.
+  </footer>
+</main>
+
+<script>
+const BANDS = [
+  { max: 50,  key: "good",      name: "Good",           advice: "Air quality is good. Carry on with normal activities." },
+  { max: 100, key: "moderate",  name: "Moderate",       advice: "Normal activities are fine for most people." },
+  { max: 200, key: "unhealthy", name: "Unhealthy",      advice: "Reduce prolonged or strenuous outdoor activity. Elderly people, children and those with heart or lung conditions should take extra care." },
+  { max: 300, key: "very",      name: "Very unhealthy", advice: "Avoid prolonged or strenuous outdoor activity." },
+  { max: Infinity, key: "hazardous", name: "Hazardous", advice: "Minimise outdoor activity and stay indoors where possible." }
+];
+const bandFor = v => BANDS.find(b => v <= b.max);
+const colour = b => `var(--${b.key})`;
+const fmtTime = t => new Date(t).toLocaleString("en-SG", { weekday: "short", hour: "numeric", minute: "2-digit", day: "numeric", month: "short" });
+
+async function load() {
+  try {
+    const [latest, history] = await Promise.all([
+      fetch("data/latest.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
+      fetch("data/history.json", { cache: "no-store" }).then(r => r.ok ? r.json() : []).catch(() => [])
+    ]);
+    render(latest, history);
+  } catch (e) {
+    document.getElementById("hero").innerHTML =
+      '<p class="error">No readings yet. Run the “Update haze data” workflow in the Actions tab, then reload this page.</p>';
+  }
+}
+
+function render(latest, history) {
+  const regions = ["north", "west", "central", "east", "south"];
+  const values = regions.map(r => latest.psi[r]).filter(v => typeof v === "number");
+  const top = Math.max(...values);
+  const band = bandFor(top);
+  document.body.dataset.band = band.key;
+  document.body.style.setProperty("--band", colour(band));
+
+  document.getElementById("hero").innerHTML = `
+    <p class="headline">Air quality is ${band.name.toLowerCase()}</p>
+    <p class="sub">The highest 24-hour PSI in Singapore is <strong>${top}</strong>. Updated ${fmtTime(latest.updated)}.</p>
+    <p class="advice">${band.advice}</p>`;
+
+  document.getElementById("map").innerHTML = regions.map(r => {
+    const v = latest.psi[r];
+    const b = typeof v === "number" ? bandFor(v) : null;
+    const pm = latest.pm25 && typeof latest.pm25[r] === "number" ? `PM2.5: ${latest.pm25[r]} µg/m³` : "";
+    return `<div class="region" style="grid-area:${r}; --band:${b ? colour(b) : "var(--line)"}">
+      <h3>${r}</h3>
+      <div class="value">${v ?? "–"}</div>
+      <div class="band">${b ? b.name : "No reading"}</div>
+      <div class="pm">${pm}</div>
+    </div>`;
+  }).join("");
+
+  drawChart(history);
+}
+
+function drawChart(history) {
+  const box = document.getElementById("chart");
+  if (history.length < 2) { box.textContent = "The chart fills in as hourly readings are collected."; return; }
+  const W = 780, H = 220, P = { l: 36, r: 10, t: 10, b: 26 };
+  const maxY = Math.max(110, ...history.map(h => h.psi)) * 1.05;
+  const t0 = new Date(history[0].time), t1 = new Date(history[history.length - 1].time);
+  const x = t => P.l + (new Date(t) - t0) / Math.max(1, t1 - t0) * (W - P.l - P.r);
+  const y = v => H - P.b - v / maxY * (H - P.t - P.b);
+  const line = history.map((h, i) => `${i ? "L" : "M"}${x(h.time).toFixed(1)},${y(h.psi).toFixed(1)}`).join(" ");
+  const guides = [50, 100, 200, 300].filter(v => v < maxY).map(v => {
+    const b = bandFor(v + 1);
+    return `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="${colour(b)}" stroke-dasharray="4 4" opacity="0.7"/>
+            <text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  }).join("");
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Highest PSI over the past week">
+    ${guides}
+    <path d="${line}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+    <text x="${P.l}" y="${H - 6}">${fmtTime(history[0].time)}</text>
+    <text x="${W - P.r}" y="${H - 6}" text-anchor="end">${fmtTime(history[history.length - 1].time)}</text>
+  </svg>`;
+}
+
+load();
+</script>
+</body>
+</html>
