@@ -1,0 +1,14 @@
+{
+  "name": "Singapore haze today",
+  "short_name": "SG Haze",
+  "description": "Latest 24-hour PSI for each region of Singapore",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e8f3fa",
+  "theme_color": "#8ec5ea",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
