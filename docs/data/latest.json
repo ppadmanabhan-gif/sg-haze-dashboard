@@ -1,7 +1,7 @@
 {
-  "updated": "2026-11-08T23:30:41+08:00",
+  "updated": "2026-11-09T00:30:41+08:00",
   "psi": {
-    "north": 74,
+    "north": 73,
     "south": 58,
     "east": 58,
     "west": 75,
@@ -11,7 +11,7 @@
     "north": 32,
     "south": 18,
     "east": 19,
-    "west": 33,
+    "west": 34,
     "central": 18
   }
 }
