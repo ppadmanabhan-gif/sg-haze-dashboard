@@ -1,17 +1,17 @@
 {
-  "updated": "2026-11-12T13:01:01+08:00",
+  "updated": "2026-11-12T14:00:42+08:00",
   "psi": {
     "north": 57,
     "south": 57,
-    "east": 56,
+    "east": 57,
     "west": 60,
-    "central": 58
+    "central": 59
   },
   "pm25": {
-    "north": 17,
-    "south": 17,
+    "north": 18,
+    "south": 18,
     "east": 17,
     "west": 20,
-    "central": 19
+    "central": 20
   }
 }
